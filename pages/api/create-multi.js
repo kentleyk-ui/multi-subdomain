@@ -1,9 +1,16 @@
 import fs from "fs";
 import { execSync } from "child_process";
-import fetch from "node-fetch";
 
 export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
+
   const { domain, subs } = req.body;
+
+  if (!domain || !Array.isArray(subs) || subs.length === 0) {
+    return res.status(400).json({ error: "domain (string) et subs (array) requis" });
+  }
 
   let output = `🚀 Domaine sélectionné : ${domain}\n\n`;
 
@@ -15,7 +22,7 @@ export default async function handler(req, res) {
 
     try {
       // 1. DNS CLOUDFLARE
-      await fetch(
+      const cfRes = await fetch(
         `https://api.cloudflare.com/client/v4/zones/${process.env.CF_ZONE}/dns_records`,
         {
           method: "POST",
@@ -34,26 +41,33 @@ export default async function handler(req, res) {
         }
       );
 
+      if (!cfRes.ok) {
+        const cfErr = await cfRes.json();
+        throw new Error(`Cloudflare: ${JSON.stringify(cfErr.errors)}`);
+      }
+
       // 2. PAGE AUTO
-      const html = `
-        <html>
-        <head>
-          <style>
-            body {
-              background: black;
-              color: gold;
-              font-size: 5rem;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              height: 100vh;
-              font-family: Arial;
-            }
-          </style>
-        </head>
-        <body>${sub.toUpperCase()}</body>
-        </html>
-      `;
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${sub.toUpperCase()}</title>
+  <style>
+    body {
+      background: black;
+      color: gold;
+      font-size: 5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+  </style>
+</head>
+<body>${sub.toUpperCase()}</body>
+</html>`;
 
       if (!fs.existsSync("./auto")) fs.mkdirSync("./auto");
       fs.writeFileSync("./auto/index.html", html);
@@ -70,5 +84,5 @@ export default async function handler(req, res) {
     }
   }
 
-  return res.json({ message: output });
+  return res.status(200).json({ message: output });
 }
