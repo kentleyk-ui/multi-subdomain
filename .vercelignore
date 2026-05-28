@@ -1,0 +1,14 @@
+.git
+.gitignore
+*.md
+.DS_Store
+node_modules
+npm-debug.log
+.next/cache
+.vercel
+.env.local
+.env.*.local
+test-deploy
+*.log
+pnpm-lock.yaml
+yarn.lock
