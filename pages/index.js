@@ -156,7 +156,7 @@ export default function Home() {
   const [statuses, setStatuses] = useState({});
   const [checking, setChecking] = useState(false);
 
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
 
   const [managingPages, setManagingPages] = useState(null);
