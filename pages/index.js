@@ -2,33 +2,35 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 
 const METAL = (loading = false, danger = false) => ({
   background: loading
-    ? "#0d1525"
+    ? "rgba(13, 21, 37, 0.6)"
     : danger
-    ? "linear-gradient(145deg, #e04060 0%, #b02040 20%, #801030 50%, #b02040 75%, #e04060 100%)"
-    : "linear-gradient(145deg, #d0dce8 0%, #a0b4c8 18%, #6880a0 42%, #507090 55%, #8090a8 72%, #c8d8e8 90%, #e8f0f8 100%)",
+    ? "linear-gradient(145deg, rgba(224, 64, 96, 0.9) 0%, rgba(176, 32, 64, 0.85) 20%, rgba(128, 16, 48, 0.8) 50%, rgba(176, 32, 64, 0.85) 75%, rgba(224, 64, 96, 0.9) 100%)"
+    : "linear-gradient(145deg, rgba(208, 220, 232, 0.8) 0%, rgba(160, 180, 200, 0.75) 18%, rgba(104, 128, 160, 0.7) 42%, rgba(80, 112, 144, 0.75) 55%, rgba(128, 144, 168, 0.8) 72%, rgba(200, 216, 232, 0.85) 90%, rgba(232, 240, 248, 0.9) 100%)",
   color: loading ? "#334455" : "#050d1a",
   fontWeight: "bold",
   letterSpacing: "0.1rem",
-  border: loading ? "1px solid #1a2535" : "1px solid rgba(200,230,255,0.55)",
+  border: loading ? "1px solid rgba(26, 37, 53, 0.5)" : "1px solid rgba(200,230,255,0.6)",
   boxShadow: loading
-    ? "none"
+    ? "0 2px 8px rgba(0, 0, 0, 0.3)"
     : danger
-    ? "0 2px 10px rgba(180,0,30,0.45), inset 0 1px 0 rgba(255,180,180,0.5), inset 0 -1px 0 rgba(0,0,0,0.2)"
-    : "0 2px 14px rgba(0,60,140,0.5), inset 0 1px 0 rgba(255,255,255,0.65), inset 0 -1px 0 rgba(0,0,0,0.18)",
-  textShadow: loading ? "none" : "0 1px 1px rgba(255,255,255,0.55)",
+    ? "0 4px 16px rgba(180,0,30,0.5), inset 0 1px 0 rgba(255,180,180,0.6), inset 0 -1px 0 rgba(0,0,0,0.3)"
+    : "0 8px 24px rgba(0,60,140,0.4), inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 0 rgba(0,0,0,0.2)",
+  textShadow: loading ? "none" : "0 1px 2px rgba(255,255,255,0.6)",
   cursor: loading ? "not-allowed" : "pointer",
-  padding: "0.75rem 1rem",
-  fontSize: "0.85rem",
-  borderRadius: "6px",
+  padding: "0.75rem 1.2rem",
+  fontSize: "0.9rem",
+  borderRadius: "8px",
   width: "100%",
   opacity: loading ? 0.5 : 1,
-  transition: "opacity 0.2s",
+  transition: "all 0.3s ease",
+  backdropFilter: "blur(2px)",
+  WebkitBackdropFilter: "blur(2px)",
 });
 
 const METAL_SM = (disabled = false, danger = false) => ({
   ...METAL(false, danger),
-  padding: "3px 10px",
-  fontSize: "0.75rem",
+  padding: "5px 14px",
+  fontSize: "0.78rem",
   width: "auto",
   letterSpacing: "0.05rem",
   opacity: disabled ? 0.4 : 1,
