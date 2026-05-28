@@ -1,0 +1,23 @@
+{
+  "mwangaza.milele4ever.com": {
+    "name": "mwangaza",
+    "domain": "mwangaza.milele4ever.com",
+    "projectId": "mwangaza",
+    "deploymentId": "dpl_...",
+    "createdAt": "2026-05-28T00:00:00Z"
+  },
+  "memoria.milele4ever.com": {
+    "name": "memoria",
+    "domain": "memoria.milele4ever.com",
+    "projectId": "memoria",
+    "deploymentId": "dpl_...",
+    "createdAt": "2026-05-28T00:00:00Z"
+  },
+  "aurore.milele4ever.com": {
+    "name": "aurore",
+    "domain": "aurore.milele4ever.com",
+    "projectId": "aurore",
+    "deploymentId": "dpl_...",
+    "createdAt": "2026-05-28T00:00:00Z"
+  }
+}
