@@ -1,5 +1,26 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 
+// Ajouter les animations globales
+if (typeof document !== "undefined" && !document.getElementById("glassmorphism-styles")) {
+  const style = document.createElement("style");
+  style.id = "glassmorphism-styles";
+  style.textContent = `
+    @keyframes glow {
+      0%, 100% { text-shadow: 0 0 20px rgba(79, 195, 247, 0.3), 0 0 40px rgba(79, 195, 247, 0.15); }
+      50% { text-shadow: 0 0 30px rgba(79, 195, 247, 0.5), 0 0 60px rgba(79, 195, 247, 0.25); }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 const METAL = (loading = false, danger = false) => ({
   background: loading
     ? "rgba(13, 21, 37, 0.6)"
@@ -63,11 +84,21 @@ const S = {
     alignItems: "center",
     padding: "3rem 1.5rem",
     boxSizing: "border-box",
+    position: "relative",
+    overflow: "hidden",
   },
-  title: { fontSize: "1.9rem", letterSpacing: "0.25rem", marginBottom: "0.4rem", color: "#4fc3f7", textAlign: "center", textShadow: "0 0 20px rgba(79, 195, 247, 0.3)" },
+  title: {
+    fontSize: "1.9rem",
+    letterSpacing: "0.25rem",
+    marginBottom: "0.4rem",
+    color: "#4fc3f7",
+    textAlign: "center",
+    textShadow: "0 0 20px rgba(79, 195, 247, 0.3), 0 0 40px rgba(79, 195, 247, 0.15)",
+    animation: "glow 3s ease-in-out infinite",
+  },
   subtitle: { fontSize: "0.7rem", letterSpacing: "0.2rem", color: "#2a4a6a", marginBottom: "2.5rem", textAlign: "center" },
   layout: { display: "flex", gap: "2rem", width: "100%", maxWidth: "1100px", alignItems: "flex-start", flexWrap: "wrap" },
-  card: { background: "rgba(10, 18, 32, 0.4)", border: "1px solid rgba(26, 48, 80, 0.6)", borderRadius: "12px", padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem", backdropFilter: "blur(10px)", boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)" },
+  card: { background: "rgba(10, 18, 32, 0.4)", border: "1px solid rgba(26, 48, 80, 0.6)", borderRadius: "12px", padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem", backdropFilter: "blur(10px)", boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)", transition: "all 0.3s ease" },
   formCard: { width: "320px", flexShrink: 0 },
   listCard: { flex: 1, minWidth: "300px" },
   cardHead: { fontSize: "0.68rem", letterSpacing: "0.18rem", color: "#4fc3f7", borderBottom: "1px solid rgba(26, 80, 128, 0.5)", paddingBottom: "0.65rem", marginBottom: "0.1rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", textShadow: "0 0 8px rgba(79, 195, 247, 0.2)" },
@@ -77,7 +108,7 @@ const S = {
   searchInput: { background: "rgba(5, 13, 26, 0.6)", color: "#81d4fa", border: "1px solid rgba(26, 48, 80, 0.5)", padding: "0.4rem 0.75rem", fontSize: "0.85rem", borderRadius: "6px", width: "100%", boxSizing: "border-box", outline: "none", backdropFilter: "blur(4px)" },
   textarea: { background: "rgba(5, 13, 26, 0.6)", color: "#81d4fa", border: "1px solid rgba(26, 48, 80, 0.5)", padding: "0.55rem 0.85rem", fontSize: "0.9rem", borderRadius: "6px", width: "100%", boxSizing: "border-box", outline: "none", minHeight: "90px", resize: "vertical", fontFamily: "Arial, sans-serif", backdropFilter: "blur(4px)" },
   descInput: { background: "rgba(6, 15, 30, 0.7)", color: "#81d4fa", border: "1px solid rgba(26, 64, 96, 0.5)", padding: "2px 6px", fontSize: "0.78rem", borderRadius: "4px", outline: "none", width: "100%", boxSizing: "border-box", fontFamily: "Arial, sans-serif", marginTop: "2px", backdropFilter: "blur(3px)" },
-  iconBtn: { background: "rgba(10, 20, 35, 0.5)", border: "1px solid rgba(26, 58, 90, 0.6)", color: "#4fc3f7", cursor: "pointer", borderRadius: "5px", padding: "4px 10px", fontSize: "0.9rem", backdropFilter: "blur(4px)", transition: "all 0.2s" },
+  iconBtn: { background: "rgba(10, 20, 35, 0.5)", border: "1px solid rgba(26, 58, 90, 0.6)", color: "#4fc3f7", cursor: "pointer", borderRadius: "5px", padding: "4px 10px", fontSize: "0.9rem", backdropFilter: "blur(4px)", transition: "all 0.2s", boxShadow: "0 0 8px rgba(79, 195, 247, 0.1)" },
   output: { background: "rgba(5, 13, 26, 0.6)", border: "1px solid rgba(26, 48, 80, 0.5)", borderRadius: "6px", padding: "0.85rem", color: "#81d4fa", fontSize: "0.82rem", whiteSpace: "pre-wrap", lineHeight: "1.6", backdropFilter: "blur(4px)" },
   row: (conf) => ({ display: "flex", alignItems: "flex-start", gap: "0.7rem", padding: "0.65rem", borderBottom: "1px solid rgba(13, 30, 48, 0.5)", background: conf ? "rgba(180, 0, 30, 0.08)" : "transparent", borderRadius: conf ? "6px" : "0", transition: "all 0.2s" }),
   rowInfo: { flex: 1, minWidth: 0 },
@@ -161,7 +192,15 @@ export default function Home() {
     setListLoading(false);
   }, []);
 
-  useEffect(() => { fetchList(); }, [fetchList]);
+  useEffect(() => {
+    fetchList();
+  }, [fetchList]);
+
+  useEffect(() => {
+    if (subdomains.length > 0) {
+      checkAllStatus();
+    }
+  }, [subdomains.length]);
 
   const displayed = useMemo(() => {
     let list = [...subdomains];
@@ -576,26 +615,42 @@ export default function Home() {
 
       {showStats && stats && (
         <div style={{ ...S.card, width: "100%", maxWidth: "1100px", marginBottom: "2rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-            <h2 style={{ fontSize: "1rem", color: "#4fc3f7", margin: 0 }}>📊 STATISTIQUES</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+            <h2 style={{ fontSize: "1rem", color: "#4fc3f7", margin: 0, textShadow: "0 0 12px rgba(79, 195, 247, 0.3)" }}>📊 STATISTIQUES EN TEMPS RÉEL</h2>
             <button onClick={() => setShowStats(false)} style={S.iconBtn}>✕</button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "1rem" }}>
-            <div style={{ background: "#0d1e30", padding: "1rem", borderRadius: "5px", textAlign: "center" }}>
-              <div style={{ fontSize: "2rem", color: "#4fc3f7", fontWeight: "bold" }}>{stats.totalSubdomains}</div>
-              <div style={{ fontSize: "0.75rem", color: "#1a4060" }}>Sous-domaines</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.2rem" }}>
+            <div style={{ background: "rgba(13, 32, 64, 0.5)", border: "1px solid rgba(79, 195, 247, 0.3)", padding: "1.2rem", borderRadius: "10px", textAlign: "center", backdropFilter: "blur(10px)", transition: "all 0.3s", boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)" }}>
+              <div style={{ fontSize: "2.5rem", color: "#4fc3f7", fontWeight: "bold", textShadow: "0 0 10px rgba(79, 195, 247, 0.4)" }}>
+                {stats.totalSubdomains || 0}
+              </div>
+              <div style={{ fontSize: "0.8rem", color: "#2a6a9a", marginTop: "0.5rem", letterSpacing: "0.1rem", textTransform: "uppercase" }}>
+                🌐 Sous-domaines
+              </div>
             </div>
-            <div style={{ background: "#0d1e30", padding: "1rem", borderRadius: "5px", textAlign: "center" }}>
-              <div style={{ fontSize: "2rem", color: "#4fc3f7", fontWeight: "bold" }}>{stats.totalPages}</div>
-              <div style={{ fontSize: "0.75rem", color: "#1a4060" }}>Pages totales</div>
+            <div style={{ background: "rgba(13, 32, 64, 0.5)", border: "1px solid rgba(79, 195, 247, 0.3)", padding: "1.2rem", borderRadius: "10px", textAlign: "center", backdropFilter: "blur(10px)", transition: "all 0.3s", boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)" }}>
+              <div style={{ fontSize: "2.5rem", color: "#4caf50", fontWeight: "bold", textShadow: "0 0 10px rgba(76, 175, 80, 0.4)" }}>
+                {stats.totalPages || 0}
+              </div>
+              <div style={{ fontSize: "0.8rem", color: "#2a6a9a", marginTop: "0.5rem", letterSpacing: "0.1rem", textTransform: "uppercase" }}>
+                📄 Pages totales
+              </div>
             </div>
-            <div style={{ background: "#0d1e30", padding: "1rem", borderRadius: "5px", textAlign: "center" }}>
-              <div style={{ fontSize: "2rem", color: "#4fc3f7", fontWeight: "bold" }}>{stats.subdomainsWithPages}</div>
-              <div style={{ fontSize: "0.75rem", color: "#1a4060" }}>Domaines avec pages</div>
+            <div style={{ background: "rgba(13, 32, 64, 0.5)", border: "1px solid rgba(79, 195, 247, 0.3)", padding: "1.2rem", borderRadius: "10px", textAlign: "center", backdropFilter: "blur(10px)", transition: "all 0.3s", boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)" }}>
+              <div style={{ fontSize: "2.5rem", color: "#ffd700", fontWeight: "bold", textShadow: "0 0 10px rgba(255, 215, 0, 0.4)" }}>
+                {stats.subdomainsWithPages || 0}
+              </div>
+              <div style={{ fontSize: "0.8rem", color: "#2a6a9a", marginTop: "0.5rem", letterSpacing: "0.1rem", textTransform: "uppercase" }}>
+                ✨ Avec contenu
+              </div>
             </div>
-            <div style={{ background: "#0d1e30", padding: "1rem", borderRadius: "5px", textAlign: "center" }}>
-              <div style={{ fontSize: "2rem", color: "#4fc3f7", fontWeight: "bold" }}>{stats.totalDescriptions}</div>
-              <div style={{ fontSize: "0.75rem", color: "#1a4060" }}>Descriptions</div>
+            <div style={{ background: "rgba(13, 32, 64, 0.5)", border: "1px solid rgba(79, 195, 247, 0.3)", padding: "1.2rem", borderRadius: "10px", textAlign: "center", backdropFilter: "blur(10px)", transition: "all 0.3s", boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)" }}>
+              <div style={{ fontSize: "2.5rem", color: "#81d4fa", fontWeight: "bold", textShadow: "0 0 10px rgba(129, 212, 250, 0.4)" }}>
+                {stats.totalDescriptions || 0}
+              </div>
+              <div style={{ fontSize: "0.8rem", color: "#2a6a9a", marginTop: "0.5rem", letterSpacing: "0.1rem", textTransform: "uppercase" }}>
+                📝 Descriptions
+              </div>
             </div>
           </div>
         </div>
@@ -637,9 +692,6 @@ export default function Home() {
             <span style={S.headRight}>
               <button style={PILL(sortBy === "date")} onClick={() => setSortBy("date")}>DATE ↓</button>
               <button style={PILL(sortBy === "name")} onClick={() => setSortBy("name")}>NOM A→Z</button>
-              <button style={S.iconBtn} onClick={checkAllStatus} disabled={checking} title="Vérifier l'état de tous les sous-domaines">
-                {checking ? "…" : "⚡"}
-              </button>
               <button style={S.iconBtn} onClick={fetchList} disabled={listLoading} title="Actualiser">
                 {listLoading ? "…" : "↺"}
               </button>
@@ -1113,7 +1165,7 @@ export default function Home() {
           {Object.keys(sslStatus).length === 0 ? (
             <p style={S.emptyText}>Aucune vérification</p>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "0.8rem" }}>
               {Object.entries(sslStatus)
                 .sort(([nameA, certA], [nameB, certB]) => {
                   if (sslSortBy === "status") {
@@ -1130,38 +1182,44 @@ export default function Home() {
                     style={{
                       background: "rgba(13, 30, 48, 0.4)",
                       border: `1px solid ${cert.valid ? "rgba(76, 175, 80, 0.6)" : "rgba(239, 83, 80, 0.6)"}`,
-                      borderRadius: "8px",
-                      padding: "1.2rem",
+                      borderRadius: "10px",
+                      padding: "0.8rem",
                       backdropFilter: "blur(10px)",
-                      transition: "all 0.2s",
+                      transition: "all 0.3s ease",
+                      boxShadow: cert.valid ? "0 0 12px rgba(76, 175, 80, 0.2)" : "0 0 12px rgba(239, 83, 80, 0.2)",
+                      position: "relative",
+                      overflow: "hidden",
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.7rem" }}>
-                      <span style={{ fontSize: "1.2rem" }}>
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: cert.valid ? "linear-gradient(90deg, transparent, #4caf50, transparent)" : "linear-gradient(90deg, transparent, #ef5350, transparent)" }}></div>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "0.4rem", marginBottom: "0.5rem" }}>
+                      <span style={{ fontSize: "1rem", flexShrink: 0 }}>
                         {cert.valid ? "✅" : "❌"}
                       </span>
-                      <div style={{ color: cert.valid ? "#4caf50" : "#ef5350", fontSize: "0.9rem", fontWeight: "bold", flex: 1 }}>
+                      <div style={{ color: cert.valid ? "#4caf50" : "#ef5350", fontSize: "0.85rem", fontWeight: "bold", flex: 1, wordBreak: "break-word" }}>
                         {domain}
                       </div>
                     </div>
-                    <div style={{ color: "#2a6a9a", fontSize: "0.75rem", marginBottom: "0.5rem" }}>
+                    <div style={{ color: "#2a6a9a", fontSize: "0.7rem", marginBottom: "0.4rem" }}>
                       🔐 {cert.status === "valid" ? "Valide" : cert.status === "expired" ? "Expiré" : "Erreur"}
                     </div>
-                    {cert.subject && (
-                      <div style={{ color: "#2a6a9a", fontSize: "0.7rem", marginBottom: "0.3rem" }}>
-                        📋 {cert.subject}
-                      </div>
-                    )}
                     {cert.validUntil && (
-                      <div style={{ color: cert.daysLeft < 7 ? "#ef5350" : cert.daysLeft < 30 ? "#ffd700" : "#4caf50", fontSize: "0.75rem", fontWeight: "600", marginTop: "0.5rem", padding: "0.4rem", background: "rgba(5, 13, 26, 0.3)", borderRadius: "4px" }}>
-                        ⏰ {cert.daysLeft}j restants ({fmt(cert.validUntil)})
+                      <div style={{ color: cert.daysLeft < 7 ? "#ef5350" : cert.daysLeft < 30 ? "#ffd700" : "#4caf50", fontSize: "0.7rem", fontWeight: "600", marginBottom: "0.5rem", padding: "0.3rem 0.5rem", background: "rgba(5, 13, 26, 0.4)", borderRadius: "4px" }}>
+                        ⏰ {cert.daysLeft}j ({fmt(cert.validUntil)})
                       </div>
                     )}
-                    {cert.message && (
-                      <div style={{ color: "#ef5350", fontSize: "0.7rem", marginTop: "0.5rem" }}>
-                        ⚠️ {cert.message}
-                      </div>
-                    )}
+                    <button
+                      style={{
+                        ...METAL_SM(false),
+                        fontSize: "0.65rem",
+                        padding: "3px 10px",
+                        marginTop: "0.4rem",
+                        width: "100%"
+                      }}
+                      title="Demander/Renouveler le certificat"
+                    >
+                      🔄 RENOUVELER
+                    </button>
                   </div>
                 ))}
             </div>
