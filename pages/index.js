@@ -465,15 +465,69 @@ export default function Home() {
 
   async function loadBackups() {
     try {
-      let backups = [];
-      try {
-        const res = await fetch("/api/auto-backup");
-        const data = await res.json();
-        backups = data.backups || [];
-      } catch {}
-      setBackups(backups);
+      const res = await fetch("/api/auto-backup", { method: "POST" });
+      const data = await res.json();
+      if (data.backup) {
+        setBackups([data.backup]);
+      }
       setShowBackups(true);
     } catch {}
+  }
+
+  async function createBackup() {
+    try {
+      const res = await fetch("/api/auto-backup", { method: "POST" });
+      const data = await res.json();
+      if (data.ok) {
+        // Recharger la liste
+        loadBackups();
+      }
+    } catch {}
+  }
+
+  async function exportBackup() {
+    try {
+      const res = await fetch("/api/backup-export-import");
+      const backup = await res.json();
+      const json = JSON.stringify(backup, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `backup-${new Date().toISOString().split("T")[0]}.json`;
+      a.click();
+    } catch {}
+  }
+
+  async function importBackup(file) {
+    if (!file) return;
+    try {
+      const content = await file.text();
+      const backup = JSON.parse(content);
+
+      if (!backup.data || !backup.data.pages || !backup.data.subdomains) {
+        alert("Format de backup invalide");
+        return;
+      }
+
+      const res = await fetch("/api/backup-export-import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: backup.data }),
+      });
+
+      const result = await res.json();
+      if (result.ok) {
+        alert("✅ Backup restauré avec succès!");
+        fetchList();
+        loadBackups();
+      } else {
+        alert("❌ Erreur: " + result.error);
+      }
+    } catch (err) {
+      alert("❌ Erreur lors de l'import: " + err.message);
+    }
+  }
   }
 
   const singleSub = subsText.trim().split("\n").filter(Boolean).length === 1;
@@ -1127,34 +1181,54 @@ export default function Home() {
             <h2 style={{ fontSize: "1rem", color: "#4fc3f7", margin: 0 }}>💾 BACKUPS</h2>
             <button onClick={() => setShowBackups(false)} style={S.iconBtn}>✕</button>
           </div>
+
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
+            <button onClick={createBackup} style={METAL_SM(false)} title="Créer un backup manuel">
+              ➕ CRÉER BACKUP
+            </button>
+            <button onClick={exportBackup} style={METAL_SM(false)} title="Télécharger les données actuelles">
+              ⬇️ EXPORTER
+            </button>
+            <label style={{ ...METAL_SM(false), padding: "5px 14px", cursor: "pointer", display: "inline-flex", alignItems: "center" }}>
+              <input
+                type="file"
+                accept=".json"
+                onChange={(e) => e.target.files?.[0] && importBackup(e.target.files[0])}
+                style={{ display: "none" }}
+              />
+              📤 IMPORTER
+            </label>
+          </div>
+
           {backups.length === 0 ? (
             <p style={S.emptyText}>Aucun backup</p>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "1rem" }}>
               {backups.map((backup, idx) => (
                 <div
                   key={idx}
                   style={{
-                    background: "#0d1e30",
-                    border: "1px solid #1a3050",
-                    borderRadius: "5px",
-                    padding: "1rem",
+                    background: "rgba(13, 30, 48, 0.4)",
+                    border: "1px solid rgba(26, 80, 128, 0.5)",
+                    borderRadius: "8px",
+                    padding: "1.2rem",
+                    backdropFilter: "blur(10px)",
                   }}
                 >
-                  <div style={{ color: "#4fc3f7", fontSize: "0.85rem", fontWeight: "bold", marginBottom: "0.5rem" }}>
-                    Backup {backups.length - idx}
+                  <div style={{ color: "#4fc3f7", fontSize: "0.9rem", fontWeight: "bold", marginBottom: "0.7rem", textShadow: "0 0 8px rgba(79, 195, 247, 0.2)" }}>
+                    📦 Backup {backups.length - idx}
+                  </div>
+                  <div style={{ color: "#2a6a9a", fontSize: "0.75rem", marginBottom: "0.5rem" }}>
+                    🕐 {fmt(backup.timestamp)}
                   </div>
                   <div style={{ color: "#2a6a9a", fontSize: "0.75rem", marginBottom: "0.3rem" }}>
-                    {fmt(backup.timestamp)}
+                    🌐 Sous-domaines: <span style={{ color: "#4fc3f7" }}>{backup.subdomainCount}</span>
                   </div>
-                  <div style={{ color: "#2a6a9a", fontSize: "0.7rem", marginBottom: "0.3rem" }}>
-                    Sous-domaines: <span style={{ color: "#4fc3f7" }}>{backup.subdomainCount}</span>
+                  <div style={{ color: "#2a6a9a", fontSize: "0.75rem", marginBottom: "0.8rem" }}>
+                    📄 Pages: <span style={{ color: "#4fc3f7" }}>{backup.pagesCount}</span>
                   </div>
-                  <div style={{ color: "#2a6a9a", fontSize: "0.7rem", marginBottom: "0.5rem" }}>
-                    Pages: <span style={{ color: "#4fc3f7" }}>{backup.pagesCount}</span>
-                  </div>
-                  <div style={{ color: "#1a4060", fontSize: "0.65rem", fontFamily: "monospace", wordBreak: "break-all" }}>
-                    Hash: {backup.hash}
+                  <div style={{ color: "#1a4060", fontSize: "0.65rem", fontFamily: "monospace", wordBreak: "break-all", padding: "0.5rem", background: "rgba(5, 13, 26, 0.3)", borderRadius: "4px" }}>
+                    🔐 Hash: {backup.hash}
                   </div>
                 </div>
               ))}
