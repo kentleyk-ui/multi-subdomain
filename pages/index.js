@@ -147,6 +147,7 @@ export default function Home() {
   const [showLogs, setShowLogs] = useState(false);
   const [sslStatus, setSslStatus] = useState({});
   const [showSSL, setShowSSL] = useState(false);
+  const [sslSortBy, setSslSortBy] = useState("name"); // "name", "status", "days-left"
   const [backups, setBackups] = useState([]);
   const [showBackups, setShowBackups] = useState(false);
 
@@ -1088,52 +1089,82 @@ export default function Home() {
 
       {showSSL && (
         <div style={{ ...S.card, width: "100%", maxWidth: "1100px", marginTop: "2rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
             <h2 style={{ fontSize: "1rem", color: "#4fc3f7", margin: 0 }}>🔒 CERTIFICATS SSL</h2>
-            <button onClick={() => setShowSSL(false)} style={S.iconBtn}>✕</button>
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <button onClick={checkSSLStatus} style={S.iconBtn} title="Actualiser">🔄</button>
+              <button onClick={() => setShowSSL(false)} style={S.iconBtn}>✕</button>
+            </div>
           </div>
+
+          {Object.keys(sslStatus).length > 0 && (
+            <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1rem" }}>
+              <button style={PILL(sslSortBy === "name")} onClick={() => setSslSortBy("name")}>
+                NOM A→Z
+              </button>
+              <button style={PILL(sslSortBy === "status")} onClick={() => setSslSortBy("status")}>
+                STATUT
+              </button>
+              <button style={PILL(sslSortBy === "days-left")} onClick={() => setSslSortBy("days-left")}>
+                EXPIRATION
+              </button>
+            </div>
+          )}
+
           {Object.keys(sslStatus).length === 0 ? (
             <p style={S.emptyText}>Aucune vérification</p>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "1rem" }}>
-              {Object.entries(sslStatus).map(([domain, cert]) => (
-                <div
-                  key={domain}
-                  style={{
-                    background: "#0d1e30",
-                    border: `1px solid ${cert.valid ? "#4caf50" : "#ef5350"}`,
-                    borderRadius: "5px",
-                    padding: "1rem",
-                  }}
-                >
-                  <div style={{ color: cert.valid ? "#4caf50" : "#ef5350", fontSize: "0.85rem", fontWeight: "bold", marginBottom: "0.5rem" }}>
-                    {domain}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
+              {Object.entries(sslStatus)
+                .sort(([nameA, certA], [nameB, certB]) => {
+                  if (sslSortBy === "status") {
+                    const statusOrder = { "valid": 0, "expired": 1, "error": 2, "no_cert": 3 };
+                    return (statusOrder[certA.status] || 99) - (statusOrder[certB.status] || 99);
+                  } else if (sslSortBy === "days-left") {
+                    return (certA.daysLeft || 999) - (certB.daysLeft || 999);
+                  }
+                  return nameA.localeCompare(nameB);
+                })
+                .map(([domain, cert]) => (
+                  <div
+                    key={domain}
+                    style={{
+                      background: "rgba(13, 30, 48, 0.4)",
+                      border: `1px solid ${cert.valid ? "rgba(76, 175, 80, 0.6)" : "rgba(239, 83, 80, 0.6)"}`,
+                      borderRadius: "8px",
+                      padding: "1.2rem",
+                      backdropFilter: "blur(10px)",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.7rem" }}>
+                      <span style={{ fontSize: "1.2rem" }}>
+                        {cert.valid ? "✅" : "❌"}
+                      </span>
+                      <div style={{ color: cert.valid ? "#4caf50" : "#ef5350", fontSize: "0.9rem", fontWeight: "bold", flex: 1 }}>
+                        {domain}
+                      </div>
+                    </div>
+                    <div style={{ color: "#2a6a9a", fontSize: "0.75rem", marginBottom: "0.5rem" }}>
+                      🔐 {cert.status === "valid" ? "Valide" : cert.status === "expired" ? "Expiré" : "Erreur"}
+                    </div>
+                    {cert.subject && (
+                      <div style={{ color: "#2a6a9a", fontSize: "0.7rem", marginBottom: "0.3rem" }}>
+                        📋 {cert.subject}
+                      </div>
+                    )}
+                    {cert.validUntil && (
+                      <div style={{ color: cert.daysLeft < 7 ? "#ef5350" : cert.daysLeft < 30 ? "#ffd700" : "#4caf50", fontSize: "0.75rem", fontWeight: "600", marginTop: "0.5rem", padding: "0.4rem", background: "rgba(5, 13, 26, 0.3)", borderRadius: "4px" }}>
+                        ⏰ {cert.daysLeft}j restants ({fmt(cert.validUntil)})
+                      </div>
+                    )}
+                    {cert.message && (
+                      <div style={{ color: "#ef5350", fontSize: "0.7rem", marginTop: "0.5rem" }}>
+                        ⚠️ {cert.message}
+                      </div>
+                    )}
                   </div>
-                  <div style={{ color: "#2a6a9a", fontSize: "0.7rem", marginBottom: "0.3rem" }}>
-                    Status: <span style={{ color: "#4fc3f7" }}>{cert.status}</span>
-                  </div>
-                  {cert.subject && (
-                    <div style={{ color: "#2a6a9a", fontSize: "0.7rem", marginBottom: "0.3rem" }}>
-                      Sujet: <span style={{ color: "#1a4060" }}>{cert.subject}</span>
-                    </div>
-                  )}
-                  {cert.issuer && (
-                    <div style={{ color: "#2a6a9a", fontSize: "0.7rem", marginBottom: "0.3rem" }}>
-                      Émetteur: <span style={{ color: "#1a4060" }}>{cert.issuer}</span>
-                    </div>
-                  )}
-                  {cert.validUntil && (
-                    <div style={{ color: "#2a6a9a", fontSize: "0.7rem", marginBottom: "0.3rem" }}>
-                      Expire: <span style={{ color: cert.daysLeft < 7 ? "#ef5350" : "#4fc3f7" }}>{fmt(cert.validUntil)} ({cert.daysLeft}j)</span>
-                    </div>
-                  )}
-                  {cert.message && (
-                    <div style={{ color: "#ef5350", fontSize: "0.7rem", marginTop: "0.5rem" }}>
-                      {cert.message}
-                    </div>
-                  )}
-                </div>
-              ))}
+                ))}
             </div>
           )}
         </div>

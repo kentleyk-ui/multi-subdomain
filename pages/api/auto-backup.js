@@ -15,21 +15,33 @@ export default async function handler(req, res) {
       backups = Array.isArray(data) ? data : [];
     } catch {}
 
+    const pagesCount = Object.values(pages).reduce((sum, sp) => sum + Object.keys(sp).length, 0);
+    const subdomainCount = Object.keys(pages).length;
+    const timestamp = new Date().toISOString();
+
     const backup = {
-      timestamp: new Date().toISOString(),
-      pagesCount: Object.values(pages).reduce((sum, sp) => sum + Object.keys(sp).length, 0),
-      subdomainCount: Object.keys(pages).length,
+      id: `backup-${Date.now()}`,
+      name: `Sauvegarde ${backups.length + 1}`,
+      timestamp: timestamp,
+      date: new Date(timestamp).toLocaleDateString("fr-FR"),
+      version: backups.length + 1,
+      pagesCount: pagesCount,
+      subdomainCount: subdomainCount,
       hash: JSON.stringify(pages).substring(0, 16),
+      size: JSON.stringify(pages).length,
     };
 
     backups.push(backup);
 
-    // Garder seulement les 30 derniers backups
-    if (backups.length > 30) backups = backups.slice(-30);
+    // Garder seulement les 2 derniers backups pour économiser l'espace
+    if (backups.length > 2) {
+      backups = backups.slice(-2);
+    }
 
     await writeData("backups.json", backups);
-    return res.status(200).json({ ok: true, backup });
+    return res.status(200).json({ ok: true, backup, totalBackups: backups.length, maxBackups: 2 });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 }
+
