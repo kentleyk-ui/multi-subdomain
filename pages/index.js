@@ -529,7 +529,6 @@ export default function Home() {
       alert("❌ Erreur lors de l'import: " + err.message);
     }
   }
-  }
 
   const singleSub = subsText.trim().split("\n").filter(Boolean).length === 1;
 
