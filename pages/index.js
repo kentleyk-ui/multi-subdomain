@@ -178,9 +178,15 @@ export default function Home() {
   const [showLogs, setShowLogs] = useState(false);
   const [sslStatus, setSslStatus] = useState({});
   const [showSSL, setShowSSL] = useState(false);
-  const [sslSortBy, setSslSortBy] = useState("name"); // "name", "status", "days-left"
+  const [sslSortBy, setSslSortBy] = useState("name");
   const [backups, setBackups] = useState([]);
   const [showBackups, setShowBackups] = useState(false);
+  const [backupConfig, setBackupConfig] = useState({ location: "local", path: "/tmp/backups", autoBackup: true, maxBackups: 2 });
+  const [showBackupConfig, setShowBackupConfig] = useState(false);
+  const [configPath, setConfigPath] = useState("/tmp/backups");
+  const [configLocation, setConfigLocation] = useState("local");
+  const [autoBackupEnabled, setAutoBackupEnabled] = useState(true);
+  const [backupInterval, setBackupInterval] = useState("24"); // heures
 
   const fetchList = useCallback(async () => {
     setListLoading(true);
@@ -566,6 +572,58 @@ export default function Home() {
       }
     } catch (err) {
       alert("❌ Erreur lors de l'import: " + err.message);
+    }
+  }
+
+  async function loadBackupConfig() {
+    try {
+      const res = await fetch("/api/backup-config");
+      const config = await res.json();
+      setBackupConfig(config);
+      setConfigPath(config.path);
+      setConfigLocation(config.location);
+      setAutoBackupEnabled(config.autoBackup);
+      setShowBackupConfig(true);
+    } catch {}
+  }
+
+  async function saveBackupConfig() {
+    try {
+      const res = await fetch("/api/backup-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          location: configLocation,
+          path: configPath,
+          autoBackup: autoBackupEnabled,
+          maxBackups: backupConfig.maxBackups,
+        }),
+      });
+      const result = await res.json();
+      if (result.ok) {
+        alert("✅ Configuration sauvegardée!");
+        setBackupConfig(result.config);
+        setShowBackupConfig(false);
+      }
+    } catch (err) {
+      alert("❌ Erreur: " + err.message);
+    }
+  }
+
+  async function renewCertificate(domain) {
+    try {
+      const res = await fetch("/api/renew-certificate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain }),
+      });
+      const result = await res.json();
+      if (result.ok) {
+        alert(`✅ Renouvellement initié pour ${domain}\n⏳ Vérification: ${result.renewal.estimatedCompletion}`);
+        setTimeout(() => checkSSLStatus(), 2000);
+      }
+    } catch (err) {
+      alert("❌ Erreur: " + err.message);
     }
   }
 
@@ -1209,6 +1267,7 @@ export default function Home() {
                       </div>
                     )}
                     <button
+                      onClick={() => renewCertificate(domain)}
                       style={{
                         ...METAL_SM(false),
                         fontSize: "0.65rem",
@@ -1286,6 +1345,9 @@ export default function Home() {
               />
               📤 IMPORTER
             </label>
+            <button onClick={loadBackupConfig} style={METAL_SM(false)} title="Configurer les backups">
+              ⚙️ CONFIG
+            </button>
           </div>
 
           {backups.length === 0 ? (
@@ -1322,6 +1384,89 @@ export default function Home() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {showBackupConfig && (
+        <div style={{ ...S.card, width: "100%", maxWidth: "600px", marginTop: "2rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+            <h2 style={{ fontSize: "1rem", color: "#4fc3f7", margin: 0, textShadow: "0 0 12px rgba(79, 195, 247, 0.3)" }}>⚙️ CONFIGURATION DES BACKUPS</h2>
+            <button onClick={() => setShowBackupConfig(false)} style={S.iconBtn}>✕</button>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+            <div>
+              <label style={S.label}>📍 EMPLACEMENT</label>
+              <select
+                value={configLocation}
+                onChange={(e) => setConfigLocation(e.target.value)}
+                style={{ ...S.input, cursor: "pointer" }}
+              >
+                <option value="local">📂 Local (/tmp/backups)</option>
+                <option value="cloud">☁️ Cloud (À venir)</option>
+                <option value="external">🔗 Externe (À venir)</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={S.label}>📁 CHEMIN D'ACCÈS</label>
+              <input
+                value={configPath}
+                onChange={(e) => setConfigPath(e.target.value)}
+                style={S.input}
+                placeholder="/tmp/backups"
+              />
+              <div style={{ fontSize: "0.7rem", color: "#2a6a9a", marginTop: "0.3rem" }}>
+                📌 Chemin où stocker les fichiers de sauvegarde
+              </div>
+            </div>
+
+            <div>
+              <label style={{ ...S.label, display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", marginBottom: "0.7rem" }}>
+                <input
+                  type="checkbox"
+                  checked={autoBackupEnabled}
+                  onChange={(e) => setAutoBackupEnabled(e.target.checked)}
+                  style={{ cursor: "pointer", width: "16px", height: "16px" }}
+                />
+                🔄 SAUVEGARDE AUTOMATIQUE
+              </label>
+              <div style={{ fontSize: "0.7rem", color: "#2a6a9a", marginLeft: "1.5rem" }}>
+                {autoBackupEnabled ? "✅ Activée" : "❌ Désactivée"}
+              </div>
+            </div>
+
+            {autoBackupEnabled && (
+              <div>
+                <label style={S.label}>⏰ INTERVALLE (heures)</label>
+                <select
+                  value={backupInterval}
+                  onChange={(e) => setBackupInterval(e.target.value)}
+                  style={{ ...S.input, cursor: "pointer" }}
+                >
+                  <option value="6">Toutes les 6 heures</option>
+                  <option value="12">Toutes les 12 heures</option>
+                  <option value="24">Une fois par jour</option>
+                  <option value="168">Une fois par semaine</option>
+                </select>
+              </div>
+            )}
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.8rem", marginTop: "1rem" }}>
+              <button
+                onClick={() => setShowBackupConfig(false)}
+                style={{ ...METAL_SM(false), ...{ background: "rgba(20, 30, 50, 0.6)" } }}
+              >
+                ✕ ANNULER
+              </button>
+              <button
+                onClick={saveBackupConfig}
+                style={METAL_SM(false)}
+              >
+                ✅ ENREGISTRER
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
